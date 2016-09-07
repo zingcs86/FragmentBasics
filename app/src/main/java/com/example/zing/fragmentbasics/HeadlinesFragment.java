@@ -47,16 +47,21 @@ public class HeadlinesFragment extends ListFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (BuildTypeConfig.DEBUGGER) Log.d(BuildTypeConfig.DEBUG_TAG, "HeadlinesFragment onCreate()");
-        // We need to use a different list item layout for devices older than Honeycomb
+        if (BuildTypeConfig.DEBUGGER)
+            Log.d(BuildTypeConfig.DEBUG_TAG, "HeadlinesFragment onCreate()");
 
-        mUserArrayList = new ArrayList<>();
-        mAdapter = new HeadlinesListAdapter(mCallback);
-
+        mAdapter = mAdapter == null ? new HeadlinesListAdapter(mCallback) : mAdapter;
         // Create an adapter for the list view, using headlines array
         setListAdapter(mAdapter);
 
-        makeJsonRequest();
+        // We don't need do jsonRequest again when rotating the screen
+        if (savedInstanceState != null) {
+            mUserArrayList = savedInstanceState.getParcelableArrayList(ARG_USER_LIST);
+            mAdapter.swapData(mUserArrayList);
+        } else {
+            mUserArrayList = new ArrayList<>();
+            makeJsonRequest();
+        }
     }
 
     @Override
@@ -71,6 +76,14 @@ public class HeadlinesFragment extends ListFragment {
             throw new ClassCastException(activity.toString()
                     + " must implement OnHeadlineSelectedListener");
         }
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        // Save the previous state
+        outState.putParcelableArrayList(ARG_USER_LIST, mUserArrayList);
+
+        super.onSaveInstanceState(outState);
     }
 
     @Override
