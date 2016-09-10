@@ -48,8 +48,9 @@ public class HeadlinesListAdapter extends BaseAdapter {
         final Holder holder;
         if (convertView == null) {
             LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-            convertView = inflater.inflate(R.layout.fragment_headlines, parent, false);
+            convertView = inflater.inflate(R.layout.listviewrow_headlines, parent, false);
             holder = new Holder();
+            holder.contentWrap = (View) convertView.findViewById(R.id.click_area);
             holder.imageView = (ImageView) convertView.findViewById(R.id.image);
             holder.headline = (TextView) convertView.findViewById(R.id.headline);
             convertView.setTag(holder);
@@ -57,7 +58,7 @@ public class HeadlinesListAdapter extends BaseAdapter {
             holder = (Holder) convertView.getTag();
         }
 
-        User user = (User) getItem(position);
+        final User user = (User) getItem(position);
 
         // "cancelRequest" is for stopping loading image
         // when scrolling a new item
@@ -66,6 +67,13 @@ public class HeadlinesListAdapter extends BaseAdapter {
             holder.imageContainer = null;
         }
 
+        // Set click listener so that we can access to more information of the item
+        holder.contentWrap.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                activity.onUserSelected(user);
+            }
+        });
         holder.headline.setText(user.getName());
         holder.imageContainer = mImageLoader.get(user.getimageUrl(), ImageLoader.getImageListener(holder.imageView, 0, 0));
         return convertView;
@@ -77,6 +85,7 @@ public class HeadlinesListAdapter extends BaseAdapter {
     }
 
     class Holder {
+        View contentWrap;
         ImageView imageView;
         TextView headline;
         ImageLoader.ImageContainer imageContainer;

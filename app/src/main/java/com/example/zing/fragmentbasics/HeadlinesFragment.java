@@ -2,10 +2,15 @@ package com.example.zing.fragmentbasics;
 
 import android.app.Activity;
 import android.os.Build;
+import android.support.annotation.Nullable;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.ListFragment;
 import android.os.Bundle;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -27,13 +32,15 @@ import java.util.ArrayList;
  * Created by Zing on 2016/8/27.
  */
 
-public class HeadlinesFragment extends ListFragment {
+public class HeadlinesFragment extends Fragment {
     private final String dataUrl = "http://api.androidhive.info/volley/person_array.json";
     private String imageUrl = "http://i.imgur.com/7spzG.png";
     OnHeadlineSelectedListener mCallback;
     private HeadlinesListAdapter mAdapter;
     private static final String ARG_USER_LIST = "ARG_USER_LIST";
     private ArrayList<User> mUserArrayList;
+    private SwipeRefreshLayout mRefreshLayout;
+    private ListView mListView;
 
     public HeadlinesFragment() {
 
@@ -51,17 +58,29 @@ public class HeadlinesFragment extends ListFragment {
             Log.d(BuildTypeConfig.DEBUG_TAG, "HeadlinesFragment onCreate()");
 
         mAdapter = mAdapter == null ? new HeadlinesListAdapter(mCallback) : mAdapter;
-        // Create an adapter for the list view, using headlines array
-        setListAdapter(mAdapter);
 
         // We don't need do jsonRequest again when rotating the screen
         if (savedInstanceState != null) {
             mUserArrayList = savedInstanceState.getParcelableArrayList(ARG_USER_LIST);
             mAdapter.swapData(mUserArrayList);
-        } else {
-            mUserArrayList = new ArrayList<>();
-            makeJsonRequest();
         }
+    }
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View returnView = inflater.inflate(R.layout.fragment_headlines, container, false);
+        mRefreshLayout = (SwipeRefreshLayout) returnView.findViewById(R.id.swipe_fresh);
+        mRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                mRefreshLayout.setRefreshing(true);
+                makeJsonRequest();
+            }
+        });
+        mListView = (ListView) returnView.findViewById(R.id.list);
+
+        return returnView;
     }
 
     @Override
@@ -76,6 +95,17 @@ public class HeadlinesFragment extends ListFragment {
             throw new ClassCastException(activity.toString()
                     + " must implement OnHeadlineSelectedListener");
         }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Create an adapter for the list view, using headlines array
+        mListView.setAdapter(mAdapter);
+
+        // We don't need do jsonRequest again when rotating the screen
+        if (mUserArrayList == null)
+            makeJsonRequest();
     }
 
     @Override
@@ -98,20 +128,13 @@ public class HeadlinesFragment extends ListFragment {
         if (BuildTypeConfig.DEBUGGER) Log.d(BuildTypeConfig.DEBUG_TAG, "HeadlinesFragment onDestroy()");
     }
 
-    @Override
-    public void onListItemClick(ListView l, View v, int position, long id) {
-        // Notify the parent activity of selected item
-        mCallback.onUserSelected(mUserArrayList.get(position));
-
-        getListView().setItemChecked(position, true);
-    }
-
     private void makeJsonRequest() {
         if (BuildTypeConfig.DEBUGGER) Log.d(BuildTypeConfig.DEBUG_TAG, "makeJsonRequest()");
         JsonArrayRequest jsonRequest = new JsonArrayRequest(Request.Method.GET, dataUrl, (String) null, new Response.Listener<JSONArray>() {
             @Override
             public void onResponse(JSONArray response) {
                 try {
+                    mUserArrayList = new ArrayList<>();
                     for (int index = 0; index < response.length(); index++) {
                         response.getJSONObject(index).put("imageUrl", imageUrl);
                         User user = User.newInstance(response.getJSONObject(index));
@@ -131,10 +154,11 @@ public class HeadlinesFragment extends ListFragment {
             @Override
             public void onErrorResponse(VolleyError error) {
                 VolleyLog.d("Volley" ,"Error: " + error.getMessage());
-                Toast.makeText(getActivity(), error.getMessage(), Toast.LENGTH_SHORT).show();
-
+                Toast.makeText(getActivity(), error.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
         AppController.getInstance().addToRequestQueue(jsonRequest);
+        // Finish refreshing
+        mRefreshLayout.setRefreshing(false);
     }
 }

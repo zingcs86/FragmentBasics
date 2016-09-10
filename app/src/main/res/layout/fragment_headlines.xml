@@ -6,20 +6,16 @@
               android:layout_height="wrap_content"
               android:padding="8dp">
 
-    <ImageView
-        android:id="@+id/image"
-        android:layout_width="72dp"
-        android:layout_height="72dp"
-        tools:src="@mipmap/ic_launcher"/>
+    <android.support.v4.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_fresh"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
-    <TextView
-        android:id="@+id/headline"
-        android:layout_width="0px"
-        android:layout_weight="1"
-        android:layout_height="72dp"
-        android:textSize="20sp"
-        android:gravity="center|left"
-        android:padding="8dp"
-        tools:text="Ralph"/>
+        <ListView
+            android:id="@+id/list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+    </android.support.v4.widget.SwipeRefreshLayout>
 
 </LinearLayout>
